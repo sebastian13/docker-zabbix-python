@@ -1,0 +1,93 @@
+version: '3'
+
+networks:
+  default:
+    external:
+      name: www-network
+
+services:
+  zabbix-server:
+    image: plocek/zabbix-python
+    restart: always
+    ports:
+      - "10051:10051"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - ./externalscripts:/usr/lib/zabbix/externalscripts
+      - ./alertscripts:/usr/lib/zabbix/alertscripts
+    depends_on:
+      - mariadb
+    environment:
+      - DB_SERVER_HOST=mariadb
+      - MYSQL_DATABSE=zabbix
+      - MYSQL_USER=zabbix
+      - MYSQL_PASSWORD=*****
+      - ZBX_CACHESIZE=100M
+      - ZBX_VALUECACHESIZE=100M
+      - ZBX_TRENDCACHESIZE=30M
+      - ZBX_HISTORYCACHESIZE=30M
+      - ZBX_HISTORYINDEXCACHESIZE=20M
+      - ZBX_STARTPOLLERS=50
+      - ZBX_IPMIPOLLERS=3
+      - ZBX_DEBUGLEVEL=0
+
+  mariadb:
+    image: mariadb:latest
+    restart: always
+    volumes:
+      - ./datadir:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=******
+      - MYSQL_DATABASE=zabbix
+      - MYSQL_USER=zabbix
+      - MYSQL_PASSWORD=*****
+
+  dbbackup:
+    image: yloeffler/mysql-backup
+    volumes:
+      - ./dbdumps/:/backup
+    depends_on:
+      - mariadb
+    environment:
+      - MYSQL_HOST=mariadb
+      - MYSQL_DB=zabbix
+      - MYSQL_USER=root
+      - MYSQL_PASS=*****
+      - MYSQL_PORT=3306
+      - INIT_BACKUP=true
+      - MAX_BACKUPS="5"
+
+  zabbix-web-apache-mysql:
+    image: zabbix/zabbix-web-nginx-mysql:alpine-latest
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    links:
+      - zabbix-server:zabbix-server
+    depends_on:
+      - mariadb
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - ./ssl:/etc/ssl/nginx
+      - ./nginx.conf:/etc/zabbix/nginx.conf:ro
+    environment:
+      - ZBX_SERVER_HOST=zabbix-server
+      - DB_SERVER_HOST=mariadb
+      - MYSQL_DATABSE=zabbix
+      - MYSQL_USER=zabbix
+      - MYSQL_PASSWORD=tschast4fan
+      - TZ=Europe/Vienna
+    user: root
+
+  smtp:
+    image: namshi/smtp
+    container_name: smtp
+    restart: always
+    ports:
+      - "1325:25"
+    environment:
+      - DISABLE_IPV6=TRUE
+      - MAILNAME=******
