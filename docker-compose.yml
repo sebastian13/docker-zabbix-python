@@ -1,10 +1,5 @@
 version: '3'
 
-networks:
-  default:
-    external:
-      name: www-network
-
 services:
   zabbix-server:
     image: plocek/zabbix-python
@@ -17,12 +12,10 @@ services:
       - ./externalscripts:/usr/lib/zabbix/externalscripts
       - ./alertscripts:/usr/lib/zabbix/alertscripts
     depends_on:
-      - mariadb
+      - mysql
+    env_file: .env
     environment:
-      - DB_SERVER_HOST=mariadb
-      - MYSQL_DATABSE=zabbix
-      - MYSQL_USER=zabbix
-      - MYSQL_PASSWORD=*****
+      - DB_SERVER_HOST=mysql
       - ZBX_CACHESIZE=100M
       - ZBX_VALUECACHESIZE=100M
       - ZBX_TRENDCACHESIZE=30M
@@ -32,33 +25,14 @@ services:
       - ZBX_IPMIPOLLERS=3
       - ZBX_DEBUGLEVEL=0
 
-  mariadb:
+  mysql:
     image: mariadb:latest
     restart: always
     volumes:
       - ./datadir:/var/lib/mysql
-    environment:
-      - MYSQL_ROOT_PASSWORD=******
-      - MYSQL_DATABASE=zabbix
-      - MYSQL_USER=zabbix
-      - MYSQL_PASSWORD=*****
+    env_file: .env
 
-  dbbackup:
-    image: yloeffler/mysql-backup
-    volumes:
-      - ./dbdumps/:/backup
-    depends_on:
-      - mariadb
-    environment:
-      - MYSQL_HOST=mariadb
-      - MYSQL_DB=zabbix
-      - MYSQL_USER=root
-      - MYSQL_PASS=*****
-      - MYSQL_PORT=3306
-      - INIT_BACKUP=true
-      - MAX_BACKUPS="5"
-
-  zabbix-web-apache-mysql:
+  zabbix-web:
     image: zabbix/zabbix-web-nginx-mysql:alpine-latest
     restart: always
     ports:
@@ -67,27 +41,27 @@ services:
     links:
       - zabbix-server:zabbix-server
     depends_on:
-      - mariadb
+      - mysql
+      - zabbix-server
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
       - ./ssl:/etc/ssl/nginx
       - ./nginx.conf:/etc/zabbix/nginx.conf:ro
+    user: root
+    env_file: .env
     environment:
       - ZBX_SERVER_HOST=zabbix-server
-      - DB_SERVER_HOST=mariadb
-      - MYSQL_DATABSE=zabbix
-      - MYSQL_USER=zabbix
-      - MYSQL_PASSWORD=tschast4fan
+      - DB_SERVER_HOST=mysql
       - TZ=Europe/Vienna
-    user: root
 
   smtp:
     image: namshi/smtp
-    container_name: smtp
     restart: always
-    ports:
-      - "1325:25"
-    environment:
-      - DISABLE_IPV6=TRUE
-      - MAILNAME=******
+    expose:
+      - "25"
+
+networks:
+  default:
+    external:
+      name: www-network
