@@ -1,6 +1,9 @@
 FROM zabbix/zabbix-server-mysql:ubuntu-latest
 MAINTAINER Sebastian Plocek <sebastian@plocek.at>
 
+# Switch to root to run previleged commands
+USER root
+
 # Update
 RUN apt-get update && apt-get install -y \
   curl \
@@ -10,3 +13,5 @@ RUN apt-get update && apt-get install -y \
 RUN pip install \
   requests \
   --upgrade pip
+
+USER 1997
