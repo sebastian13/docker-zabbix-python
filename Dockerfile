@@ -1,6 +1,7 @@
 FROM zabbix/zabbix-server-mysql:ubuntu-latest
 MAINTAINER Sebastian Plocek <sebastian@plocek.at>
 
+# Switch to root to run previleged commands
 USER root
 
 # Update
@@ -14,4 +15,3 @@ RUN pip3 install \
   --upgrade pip
 
 USER 1997
-
