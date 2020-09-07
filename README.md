@@ -11,3 +11,9 @@ This image is based on the [official Zabbix image](https://hub.docker.com/r/zabb
 
 ## How to use this image
 The image can be used identically to the official Zabbix image. However, you cou should also take a look at my [docker-compose](https://github.com/sebastian13/docker-zabbix-python/blob/master/docker-compose.yml) file.
+
+```
+curl -LO https://raw.githubusercontent.com/sebastian13/docker-zabbix-python/master/docker-compose.yml
+docker-compose pull
+docker-compose up -d
+```
